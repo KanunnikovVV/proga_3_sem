@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Калькулятор</title>
+
+    <style>
+      label {
+        width: 90%;
+        font-size: 18px;
+        text-align: right;
+      }
+
+      input {
+        width: 90%;
+        margin-bottom: 10px;
+        padding-block: 5px;
+        background-color: white;
+        border: 1px solid black;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        width: 200px;
+      }
+
+      .buttons {
+        display: flex;
+        gap: 4px;
+      }
+
+      button {
+        width: 88px;
+        padding: 5px;
+        background-color: #52ccff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      .plus-active {
+        background-color: lightgreen;
+      }
+
+      .minus-active {
+        background-color: lightcoral;
+      }
+    </style>
+
+    <script>
+      function resetButtonColors() {
+        const buttons = document.querySelectorAll(".buttons button");
+
+        buttons.forEach(function (button) {
+          button.classList.remove("plus-active", "minus-active");
+        });
+      }
+
+      function calculateSum(button) {
+        const x = parseFloat(document.getElementById("x").value);
+        const y = parseFloat(document.getElementById("y").value);
+
+        document.getElementById("z").value = x + y;
+
+        resetButtonColors();
+        button.classList.add("plus-active");
+      }
+
+      function calculateDifference(button) {
+        const x = parseFloat(document.getElementById("x").value);
+        const y = parseFloat(document.getElementById("y").value);
+
+        document.getElementById("z").value = x - y;
+
+        resetButtonColors();
+        button.classList.add("minus-active");
+      }
+    </script>
+  </head>
+
+  <body>
+    <h1>Калькулятор</h1>
+
+    <div class="field">
+      <label for="x">X</label>
+      <input id="x" type="number" />
+    </div>
+
+    <div class="field">
+      <label for="y">Y</label>
+      <input id="y" type="number" />
+    </div>
+
+    <div class="buttons">
+      <button type="button" onclick="calculateSum(this)">+</button>
+      <button type="button" onclick="calculateDifference(this)">−</button>
+    </div>
+
+    <div class="field">
+      <label for="z">Z</label>
+      <input id="z" readonly />
+    </div>
+  </body>
+</html>
