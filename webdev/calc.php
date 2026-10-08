@@ -98,7 +98,7 @@
 
     <button onclick="calculateMinus()">-</button>
 
-    <button onclick="calculateMultiply()">Умножить</button>
+    <button onclick="calculateMultiply()">*</button>
 
     <div class="field">
       <label for="z">Z</label>
