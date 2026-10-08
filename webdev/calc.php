@@ -1,12 +1,12 @@
 <?php
   session_start();
-
-  // Проверяем, вошел ли пользователь в аккаунт
+  // echo $_SESSION['name'];
   if(!isset($_SESSION['name'])) {
     echo("<h2>Вы не вошли в аккаунт! <br /> Через 3 секунды вы будете перенаправлены на страницу логина</h2> <br />");
     echo("<a href='login.html'>Войти в аккаунт</a>");
-
-    // Через 3 секунды перенаправляем пользователя на страницу авторизации
+    // Правильный вариант
+    // header('Location: login.html');
+    // Ещё одинн способ
     echo("<meta http-equiv='refresh' content='3; url=login.html'></meta>");
     die();
   }
@@ -17,7 +17,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>Калькулятор</title>
 
     <style>
@@ -35,6 +34,12 @@
         padding-block: 5px;
       }
 
+      .number {
+      }
+
+      #z {
+      }
+
       .field {
         display: flex;
         flex-direction: column;
@@ -44,97 +49,60 @@
       button {
         width: 180px;
         padding: 5px;
-        margin-bottom: 5px;
         background-color: #52ccff;
         border: none;
         border-radius: 5px;
-        cursor: pointer;
       }
     </style>
 
     <script>
-      function calculate(operation) {
+      function calculateSum() {
+        let x = parseFloat(document.getElementById("x").value);
+        let y = parseFloat(document.getElementById("y").value);
+        let z = x + y;
+        document.getElementById("z").value = z;
+      }
 
-        // Получаем значения X и Y
-        let x = document.getElementById("x").value;
-        let y = document.getElementById("y").value;
+      function calculateMinus() {
+        let x = parseFloat(document.getElementById("x").value);
+        let y = parseFloat(document.getElementById("y").value);
+        let z = x - y;
+        document.getElementById("z").value = z;
+      }
 
-        // Проверяем, что числа введены
-        if (x === "" || y === "") {
-          alert("Введите X и Y");
-          return;
-        }
-
-        // Формируем данные для отправки в сервис
-        let data = new URLSearchParams();
-
-        data.append("x", x);
-        data.append("y", y);
-        data.append("operation", operation);
-
-        // Отправляем запрос в operations_service.php
-        fetch("operations_service.php", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          body: data
-        })
-        .then(response => response.text())
-        .then(result => {
-
-          // Выводим полученный результат в поле Z
-          document.getElementById("z").value = result;
-
-        })
-        .catch(error => {
-          console.error("Ошибка:", error);
-        });
+      function calculateMultiply() {
+        let x = parseFloat(document.getElementById("x").value);
+        let y = parseFloat(document.getElementById("y").value);
+        let z = x * y;
+        document.getElementById("z").value = z;
       }
     </script>
-
   </head>
 
   <body>
-
-    <a href="logout.php">Выйти из системы</a>
+    <a href='logout.php'>Выйти из системы</a>
 
     <h1>Калькулятор</h1>
 
     <div class="field">
       <label for="x">X</label>
-      <input
-        class="number"
-        id="x"
-        type="number"
-        step="any"
-      />
+      <input class="number" id="x" />
     </div>
 
     <div class="field">
       <label for="y">Y</label>
-      <input
-        class="number"
-        id="y"
-        type="number"
-        step="any"
-      />
+      <input class="number" id="y" />
     </div>
 
-    <!-- Сложение -->
-    <button onclick="calculate('plus')">
-      +
-    </button>
+    <button onclick="calculateSum()">+</button>
 
-    <!-- Умножение -->
-    <button onclick="calculate('multiply')">
-      Умножить
-    </button>
+    <button onclick="calculateMinus()">-</button>
+
+    <button onclick="calculateMultiply()">Умножить</button>
 
     <div class="field">
       <label for="z">Z</label>
-      <input id="z" readonly />
+      <input id="z" />
     </div>
-
   </body>
 </html>
