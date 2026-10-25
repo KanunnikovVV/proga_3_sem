@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-$correctLogin = 'admin';
+$correctLogin = 'Vka';
 $correctPassword = '12345';
 
 $login = $_POST['login'] ?? '';
@@ -17,7 +17,13 @@ $isCorrect = (
 
 if ($isCorrect) {
     session_regenerate_id(true);
+
     $_SESSION['name'] = $login;
+    $_SESSION['login'] = $login; // Логин для работы с БД
+
+    // НОВОЕ: переход на калькулятор после авторизации
+    header('Location: calc.php');
+    exit;
 }
 ?>
 

@@ -56,31 +56,67 @@
     </style>
 
     <script>
+      // Отправляем вычисление на сервер: он считает результат и сохраняет его в MySQL.
+      function saveOperation(operation, x, y) {
+        if (!Number.isFinite(x) || !Number.isFinite(y)) {
+          alert('Введите корректные числа X и Y');
+          document.getElementById('z').value = '';
+          return;
+        }
+
+        const params = new URLSearchParams({ operation: operation, x: x, y: y });
+
+        fetch('api/operations_service.php', {
+          method: 'POST',
+          body: params
+        })
+        .then((response) => {
+          if (response.status === 401) {
+            window.location.href = 'login.html';
+            throw new Error('Сессия авторизации истекла');
+          }
+          if (!response.ok) {
+            throw new Error('Ошибка сервера: ' + response.status);
+          }
+          return response.text();
+        })
+        .then((result) => {
+          const value = result.trim();
+          if (value === '' || !Number.isFinite(Number(value))) {
+            throw new Error('Сервер вернул некорректный результат');
+          }
+          document.getElementById('z').value = value;
+        })
+        .catch((error) => {
+          console.error(error);
+          document.getElementById('z').value = '';
+          alert('Не удалось сохранить операцию: ' + error.message);
+        });
+      }
+
       function calculateSum() {
         let x = parseFloat(document.getElementById("x").value);
         let y = parseFloat(document.getElementById("y").value);
-        let z = x + y;
-        document.getElementById("z").value = z;
+        saveOperation('plus', x, y);
       }
 
       function calculateMinus() {
         let x = parseFloat(document.getElementById("x").value);
         let y = parseFloat(document.getElementById("y").value);
-        let z = x - y;
-        document.getElementById("z").value = z;
+        saveOperation('minus', x, y);
       }
 
       function calculateMultiply() {
         let x = parseFloat(document.getElementById("x").value);
         let y = parseFloat(document.getElementById("y").value);
-        let z = x * y;
-        document.getElementById("z").value = z;
+        saveOperation('multiply', x, y);
       }
     </script>
   </head>
 
   <body>
     <a href='logout.php'>Выйти из системы</a>
+    <a href='invoice.php'>История операций</a>
 
     <h1>Калькулятор</h1>
 
