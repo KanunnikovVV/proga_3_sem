@@ -44,6 +44,107 @@
         .filters {
             margin-block: 10px;
         }
+
+        /* CSS-анимации и оформление из бонусного задания. */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 14px rgba(34, 38, 54, 0.14);
+            margin-block: 14px;
+        }
+
+        th, td {
+            border: 1px solid white;
+            padding: 8px 12px;
+        }
+
+        th {
+            background-color: #ebafd7;
+            transition: background-color 0.3s ease;
+        }
+
+        th.asc, th.desc {
+            background-color: #fcf268;
+        }
+
+        tbody td {
+            background-color: #dadada;
+            transition: background-color 0.25s ease;
+        }
+
+        tbody tr:nth-child(even) td {
+            background-color: #eeeeee;
+        }
+
+        tbody tr:hover td {
+            background-color: #dce7ff;
+        }
+
+        /* Новые строки мягко появляются после загрузки. */
+        tbody tr {
+            animation: rowAppear 0.35s ease both;
+        }
+
+        @keyframes rowAppear {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        button {
+            padding: 6px 12px;
+            border: 1px solid #9095a4;
+            border-radius: 5px;
+            background-color: #f4f4f4;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #dcd4ed;
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        input, select {
+            padding: 5px;
+            border: 1px solid #9095a4;
+            border-radius: 5px;
+        }
+
+        #page-info {
+            margin-inline: 8px;
+        }
+
+        /* Вращающийся индикатор ожидания из примера преподавателя. */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 3px solid #dddddd;
+            border-top-color: #333333;
+            border-radius: 50%;
+            vertical-align: middle;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            th, td, button { transition: none; }
+            tbody tr, .spinner { animation: none; }
+        }
     </style>
     <script>
         // Добавлено на занятии: параметры сортировки и номер страницы.
@@ -56,6 +157,10 @@
         let lastPage = null;
         let isLoading = false;
         let requestNumber = 0;
+
+        // Добавлено с занятия: можно выбрать 5, 10 или 20 записей.
+        let limit = 5;
+        let totalPages = 1;
 
         function sortBy(column) {
             if (sort === column) {
@@ -96,7 +201,7 @@
         }
 
         function showPages() {
-            document.getElementById('page-info').textContent = `Страница ${page}`;
+            document.getElementById('page-info').textContent = `Страница ${page} из ${totalPages}`;
 
             // Домашнее задание: кнопки нельзя нажимать за границами списка.
             document.getElementById('prev').disabled = isLoading || page === 1;
@@ -112,7 +217,7 @@
             isLoading = true;
             showPages();
             document.getElementById('calcs').innerHTML =
-                '<tr><td colspan="5">Загрузка...</td></tr>';
+                '<tr><td colspan="5"><span class="spinner"></span> Идёт загрузка...</td></tr>';
 
             // Сохраняем все четыре фильтра из твоей старой версии.
             const date_from = document.getElementById('date_from').value;
@@ -127,7 +232,8 @@
                 z_min: z_min,
                 sort: sort,
                 dir: dir,
-                page: page
+                page: page,
+                limit: limit
             });
 
             // Используем fetch(), как в файле преподавателя.
@@ -142,10 +248,19 @@
                     }
                     return response.json();
                 })
-                .then(function(calcs) {
-                    if (currentRequest !== requestNumber || calcs === null) {
+                .then(function(data) {
+                    if (currentRequest !== requestNumber || data === null) {
                         return;
                     }
+
+                    // Новый ответ сервера: массив операций, общее число, страницы и стоимость.
+                    const calcs = data.calcs;
+                    totalPages = data.totalPages;
+                    const totalElement = document.getElementById('total');
+                    totalElement.textContent = `Всего операций: ${data.total}. `;
+                    const sumElement = document.createElement('strong');
+                    sumElement.textContent = `К оплате: ${data.sum} руб.`;
+                    totalElement.appendChild(sumElement);
 
                     // Домашнее задание: пустой массив — признак, что дальше
                     // страниц нет. Возвращаемся на предыдущую страницу.
@@ -186,8 +301,9 @@
                 return;
             }
 
-            calcs.forEach(function(row) {
+            calcs.forEach(function(row, index) {
                 const tr = document.createElement('tr');
+                tr.style.animationDelay = (index * 0.05) + 's';
                 [row.operation_date, row.x, row.y, row.operation, row.z].forEach(function(value) {
                     const td = document.createElement('td');
                     td.textContent = value;
@@ -210,6 +326,13 @@
             document.getElementById('z_max').value = '';
             document.getElementById('z_min').value = '';
             applyFilter();
+        }
+
+        function changeLimit() {
+            limit = Number(document.getElementById('limit').value);
+            page = 1;
+            lastPage = null;
+            loadData();
         }
 
         window.onload = function() {
@@ -256,6 +379,12 @@
         <button id="prev" onclick="prevPage()" disabled>Назад</button>
         <span id="page-info">Страница 1</span>
         <button id="next" onclick="nextPage()" disabled>Вперёд</button>
+        <select id="limit" onchange="changeLimit()" aria-label="Операций на странице">
+            <option value="5">5 элементов</option>
+            <option value="10">10 элементов</option>
+            <option value="20">20 элементов</option>
+        </select>
     </div>
+    <p id="total"></p>
 </body>
 </html>
