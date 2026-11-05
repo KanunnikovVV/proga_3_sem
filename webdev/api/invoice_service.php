@@ -1,16 +1,17 @@
 <?php
     session_start();
+    require __DIR__ . '/../config.php';
 
     if (!isset($_SESSION['name']) || !isset($_SESSION['login'])) {
         http_response_code(401);
         exit('Вы не вошли в аккаунт (или в сессии отсутствует login)');
     }
 
-    // Настройки БД из твоего старого проекта.
-    $host = 'localhost';
-    $username = 'root';
-    $password_db = '';
-    $db = 'calc';
+    // Настройки БД вынесены в config.php, как в файлах преподавателя.
+    $host = $db_host;
+    $username = $db_username;
+    $password_db = $db_password;
+    $db = $db_name;
 
     $mysqli = new mysqli($host, $username, $password_db, $db);
     if ($mysqli->connect_error) {
@@ -33,8 +34,11 @@
         $dir = 'ASC';
     }
 
-    // Добавлено на занятии: отдаём по 5 операций на страницу.
-    $limit = 5;
+    // Добавлено с занятия: число операций на странице выбирается пользователем.
+    $limit = $app_limit;
+    if (isset($_GET['limit']) && in_array($_GET['limit'], ['5', '10', '20'], true)) {
+        $limit = (int) $_GET['limit'];
+    }
     $page = 1;
     if (isset($_GET['page'])) {
         $page = max(1, (int) $_GET['page']);
@@ -43,20 +47,18 @@
 
     // Исходный запрос и фильтры из твоей версии.
     // Фильтрация остаётся на стороне MySQL.
-    $query = 'SELECT operation_date, x, y, z, operation
-              FROM operation
-              WHERE login = ?';
+    $where = ' FROM operation WHERE login = ?';
     $types = 's';
     $params = [$login];
 
     if (isset($_GET['date_from']) && $_GET['date_from'] !== '') {
-        $query .= ' AND operation_date >= ?';
+        $where .= ' AND operation_date >= ?';
         $types .= 's';
         $params[] = $_GET['date_from'];
     }
     if (isset($_GET['date_to']) && $_GET['date_to'] !== '') {
         // Включаем в выборку весь конечный день.
-        $query .= ' AND operation_date < DATE_ADD(?, INTERVAL 1 DAY)';
+        $where .= ' AND operation_date < DATE_ADD(?, INTERVAL 1 DAY)';
         $types .= 's';
         $params[] = $_GET['date_to'];
     }
@@ -66,7 +68,7 @@
             http_response_code(400);
             exit('Некорректное значение «Результат не больше»');
         }
-        $query .= ' AND z <= ?';
+        $where .= ' AND z <= ?';
         $types .= 'd';
         $params[] = (float) $_GET['z_max'];
     }
@@ -76,13 +78,29 @@
             http_response_code(400);
             exit('Некорректное значение «Результат не меньше»');
         }
-        $query .= ' AND z >= ?';
+        $where .= ' AND z >= ?';
         $types .= 'd';
         $params[] = (float) $_GET['z_min'];
     }
 
-    // Добавлено на занятии: ORDER BY + LIMIT/OFFSET.
+    // Добавлено с занятия: количество записей и стоимость с учётом ВСЕХ фильтров.
+    // Используем те же параметры WHERE, что и для самой таблицы.
+    $countQuery = 'SELECT COUNT(*) AS total' . $where;
+    $countResult = $mysqli->prepare($countQuery);
+    if (!$countResult) {
+        http_response_code(500);
+        exit('Ошибка подготовки запроса подсчёта');
+    }
+    $countResult->bind_param($types, ...$params);
+    $countResult->execute();
+    $total = (int) $countResult->get_result()->fetch_assoc()['total'];
+    $countResult->close();
+    $totalPages = max(1, (int) ceil($total / $limit));
+    $sum = $total * $price_per_op;
+
+    // Прежняя сортировка и пагинация сохраняются.
     // Имена столбцов и направление безопасны, поскольку проверены выше.
+    $query = 'SELECT operation_date, x, y, z, operation' . $where;
     $query .= " ORDER BY $sort $dir LIMIT ? OFFSET ?";
     $types .= 'ii';
     $params[] = $limit;
@@ -105,7 +123,12 @@
     $result->close();
     $mysqli->close();
 
-    // Если записей больше нет, сервер возвращает именно [] —
-    // этот ответ используется в домашнем задании для блокировки «Вперёд».
+    // Для прошлого ДЗ конец списка по-прежнему определяется по пустому calcs: [].
+    // В новом формате дополнительно возвращаются показатели, как у преподавателя.
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($calcs, JSON_UNESCAPED_UNICODE);
+    echo json_encode([
+        'calcs' => $calcs,
+        'total' => $total,
+        'totalPages' => $totalPages,
+        'sum' => $sum,
+    ], JSON_UNESCAPED_UNICODE);

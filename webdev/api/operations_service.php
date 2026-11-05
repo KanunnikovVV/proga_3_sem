@@ -1,5 +1,6 @@
 <?php
     session_start();
+    require __DIR__ . '/../config.php';
 
     // Проверка может ли пользователь выполнить действие
     if(!isset($_SESSION['name']) || !isset($_SESSION['login'])) {
@@ -8,10 +9,10 @@
     }
 
     // Подключиться к БД
-    $host = 'localhost';
-    $username = 'root';
-    $password_db = '';
-    $db = 'calc';
+    $host = $db_host;
+    $username = $db_username;
+    $password_db = $db_password;
+    $db = $db_name;
 
     $mysqli = new mysqli($host, $username, $password_db, $db);
 
